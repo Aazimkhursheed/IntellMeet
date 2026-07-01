@@ -19,10 +19,7 @@ export const protect = async (req, res, next) => {
 
   try {
     // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'super_secret_access_token_123456789_change_me_in_prod'
-    );
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Get user from database (excluding password)
     const user = await User.findById(decoded.id);

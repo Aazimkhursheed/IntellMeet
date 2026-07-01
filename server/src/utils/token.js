@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 export const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
-    process.env.JWT_SECRET || 'super_secret_access_token_123456789_change_me_in_prod',
+    process.env.JWT_SECRET,
     { expiresIn: '15m' }
   );
 };
@@ -11,7 +11,7 @@ export const generateAccessToken = (user) => {
 export const generateRefreshToken = (user) => {
   return jwt.sign(
     { id: user._id },
-    process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_token_987654321_change_me_in_prod',
+    process.env.JWT_REFRESH_SECRET,
     { expiresIn: '7d' }
   );
 };

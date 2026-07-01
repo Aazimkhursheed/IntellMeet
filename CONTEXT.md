@@ -51,31 +51,28 @@ The project is currently in its **foundational phase**. Only the project scaffol
 | Project scaffold (monorepo) | ✅ Complete | Root workspace with `concurrently` for parallel dev |
 | Server foundation (Express, Helmet, Morgan, CORS) | ✅ Complete | Production-ready middleware stack |
 | Database connection (MongoDB Atlas via Mongoose) | ✅ Complete | Graceful warning if DB unreachable |
-| Socket.io server stub | ✅ Complete | Basic connect/disconnect logging only |
+| Socket.io server foundation | ✅ Complete | Connection, join-room, leave-room events |
 | Authentication — Backend | ✅ Complete | Full JWT access + refresh token cycle |
 | Authentication — Frontend | ✅ Complete | Zustand store, protected routes, Login/Signup pages |
 | Global error handling | ✅ Complete | 404 notFound + errorHandler middleware |
 | Vite dev proxy | ✅ Complete | `/api` and `/socket.io` proxied to port 5001 |
-
-### ⏳ Partially Implemented
-
-| Module | Status | Notes |
-|---|---|---|
-| Dashboard page | ⚠️ Stub | Exists only to display authenticated user profile; no meeting features |
+| Security hardening | ✅ Complete | Rate limiting on auth routes, JWT secret validation |
+| User profile module | ✅ Complete | Extended User model, GET/PUT profile endpoints |
+| Cloudinary integration | ✅ Complete | Avatar upload via Multer + Cloudinary storage |
+| Meeting module | ✅ Complete | Meeting model, full CRUD API with validation |
+| Frontend application shell | ✅ Complete | AppLayout, Dashboard, Meetings, Profile, Settings pages with reusable UI components |
 
 ### ❌ Not Yet Implemented (Planned)
 
 | Module | Notes |
 |---|---|
-| Meeting creation & management | Core feature — not started |
 | WebRTC video/audio streaming | Peer-to-peer video calls — not started |
-| Real-time Socket.io signalling | Room management, offer/answer, ICE — not started |
+| Real-time Socket.io signalling (WebRTC) | Offer/answer/ICE candidates — not started |
 | AI meeting summarisation | AI transcript/summary integration — not started |
-| Cloudinary media upload | Avatar uploads, meeting recordings — not started |
-| User profile editing | Update name, avatar, password — not started |
-| Admin panel | User management, role assignment — not started |
+| Cloudinary media recording | Meeting recordings — not started |
 | Password reset / forgot password | Email-based reset flow — not started |
 | Email verification | Post-registration email confirmation — not started |
+| Admin panel | User management, role assignment — not started |
 | Notifications system | In-app or push notifications — not started |
 
 ---
@@ -102,12 +99,22 @@ IntellMeet/                          ← Monorepo root
 │       │
 │       ├── pages/                   ← Full-page route components
 │       │   ├── Login.jsx            ← Login form with validation and Zustand integration
-│       │   └── Signup.jsx           ← Signup form with real-time password criteria checklist
+│       │   ├── Signup.jsx           ← Signup form with real-time password criteria checklist
+│       │   ├── Dashboard.jsx        ← Premium dashboard UI with static data
+│       │   ├── Meetings.jsx         ← Meetings page layout with placeholders
+│       │   ├── Profile.jsx          ← Profile page UI with placeholders
+│       │   └── Settings.jsx         ← Settings page basic layout
 │       │
 │       ├── components/
 │       │   ├── layout/
-│       │   │   └── ProtectedRoute.jsx  ← React Router Outlet guard (redirects to /login)
-│       │   └── ui/                  ← Reserved for shadcn/ui components (empty, .gitkeep)
+│       │   │   ├── ProtectedRoute.jsx  ← React Router Outlet guard (redirects to /login)
+│       │   │   └── AppLayout.jsx        ← Protected app layout with sidebar, navbar, mobile navigation
+│       │   └── ui/
+│       │       ├── Button.jsx          ← Reusable button component (primary, secondary, danger, ghost, outline)
+│       │       ├── Card.jsx             ← Card components (Card, CardHeader, CardBody, CardFooter)
+│       │       ├── PageHeader.jsx       ← Page header with title, subtitle, back button, action
+│       │       ├── LoadingSpinner.jsx   ← Loading spinner component
+│       │       └── EmptyState.jsx       ← Empty state component with different types
 │       │
 │       ├── store/
 │       │   └── useAuthStore.js      ← Zustand: user, isAuthenticated, isCheckingAuth, error;
@@ -122,30 +129,34 @@ IntellMeet/                          ← Monorepo root
 │       ├── routes/                  ← Reserved for route definitions (empty, .gitkeep)
 │       └── utils/                   ← Reserved for client utility functions (empty, .gitkeep)
 │
-└── server/                          ← Express.js + Socket.io API
+└├── server/                          ← Express.js + Socket.io API
     ├── .env                         ← Active environment config (gitignored)
     ├── .env.example                 ← Environment variable template
     ├── eslint.config.js             ← ESLint for Node.js (no-unused-vars warn, no-console off)
     ├── package.json
     └── src/
-        ├── server.js                ← Entry point: dotenv, connectDB, http server, Socket.io init
+        ├── server.js                ← Entry point: env validation, connectDB, http server, Socket.io init
         ├── app.js                   ← Express app: middleware stack, route mounting, error fallbacks
         │
         ├── config/
-        │   └── db.js                ← Mongoose connection with graceful error handling
+        │   ├── db.js                ← Mongoose connection with graceful error handling
+        │   └── cloudinary.js       ← Cloudinary + Multer storage configuration
         │
         ├── models/
-        │   └── User.js              ← Mongoose User schema (fullName, email, password, role, refreshToken)
+        │   ├── User.js              ← Mongoose User schema (fullName, email, password, role, refreshToken, avatar, bio, company, designation)
+        │   └── Meeting.js           ← Mongoose Meeting schema (title, description, host, participants, meetingCode, scheduledFor, duration, status)
         │
         ├── controllers/
-        │   └── authController.js    ← register, login, logout, refreshToken, getCurrentUser, getUserProfile
+        │   ├── authController.js    ← register, login, logout, refreshToken, getCurrentUser, getUserProfile, updateUserProfile, uploadAvatar
+        │   └── meetingController.js ← createMeeting, getMyMeetings, getMeetingById, updateMeeting, deleteMeeting
         │
         ├── middleware/
         │   ├── authMiddleware.js    ← protect (JWT verify), admin (role check) middleware
         │   └── errorHandler.js      ← notFound (404) + errorHandler (global) middleware
         │
         ├── routes/
-        │   └── authRoutes.js        ← Express Router for /api/v1/auth/* endpoints
+        │   ├── authRoutes.js        ← Express Router for /api/v1/auth/* endpoints
+        │   └── meetingRoutes.js     ← Express Router for /api/v1/meetings/* endpoints
         │
         ├── validators/
         │   └── authValidator.js     ← validateRegister and validateLogin middleware functions
@@ -322,6 +333,8 @@ Request
   → express.urlencoded() [Form body parsing]
   → cookieParser()      [Cookie parsing]
   → Route handlers
+    → authRoutes        [express-rate-limit on login/register]
+    → meetingRoutes     [protect middleware on all routes]
   → notFound()          [404 fallback]
   → errorHandler()      [Global error handler]
 ```
@@ -329,11 +342,12 @@ Request
 ### Server Entry Point (`server.js`)
 
 1. Loads `.env` via `dotenv.config()`
-2. Calls `connectDB()` (non-blocking — server starts even if DB fails)
-3. Creates `http.Server` from Express `app`
-4. Initialises `socket.io` on the same HTTP server with CORS config
-5. Registers `connection`/`disconnect` Socket.io events (stub)
-6. Starts listening on `PORT` (default `5001`)
+2. Validates required environment variables (`NODE_ENV`, `CLIENT_URL`, `MONGODB_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`). Fails fast if any are missing.
+3. Calls `connectDB()` (non-blocking — server starts even if DB fails)
+4. Creates `http.Server` from Express `app`
+5. Initialises `socket.io` on the same HTTP server with CORS config
+6. Registers Socket.io events: `connection`, `join-room`, `leave-room`, `disconnect`
+7. Starts listening on `PORT` (default `5001`)
 
 ### Error Handling Pattern
 
@@ -359,6 +373,26 @@ All API routes use the prefix `/api/v1/`. Future modules (meetings, users, etc.)
 | `password` | String | Required, `select: false` | bcrypt hashed (salt rounds: 10). Never returned in queries by default |
 | `role` | String | Enum: `['member', 'admin']`, default: `'member'` | Role-based access control |
 | `refreshToken` | String | `select: false` | Stored plain JWT string; used for refresh token rotation and session validation |
+| `avatar` | String | Optional | Cloudinary URL for user avatar |
+| `bio` | String | Optional, max 500 chars | User biography |
+| `company` | String | Optional, trimmed | User's company |
+| `designation` | String | Optional, trimmed | User's job title |
+| `createdAt` | Date | Auto (timestamps) | Mongoose `timestamps: true` |
+| `updatedAt` | Date | Auto (timestamps) | Mongoose `timestamps: true` |
+
+### Collection: `meetings`
+
+| Field | Type | Constraints | Notes |
+|---|---|---|---|
+| `_id` | ObjectId | Auto-generated | MongoDB primary key |
+| `title` | String | Required, max 200 chars | Meeting title |
+| `description` | String | Optional, max 1000 chars | Meeting description |
+| `host` | ObjectId (ref: User) | Required | Meeting host/organizer |
+| `participants` | Array of ObjectId (ref: User) | Optional | Meeting participants |
+| `meetingCode` | String | Required, unique | Auto-generated 9-char code (XXX-XXX-XXX) |
+| `scheduledFor` | Date | Default: now | Scheduled meeting time |
+| `duration` | Number | Default: 60, min: 15, max: 480 | Duration in minutes |
+| `status` | String | Enum: `['scheduled', 'ongoing', 'completed', 'cancelled']`, default: `'scheduled'` | Meeting status |
 | `createdAt` | Date | Auto (timestamps) | Mongoose `timestamps: true` |
 | `updatedAt` | Date | Auto (timestamps) | Mongoose `timestamps: true` |
 
@@ -366,7 +400,6 @@ All API routes use the prefix `/api/v1/`. Future modules (meetings, users, etc.)
 
 | Collection | Purpose |
 |---|---|
-| `meetings` | Meeting rooms, participants, metadata |
 | `recordings` | Meeting recording references (Cloudinary URLs) |
 | `transcripts` | AI-generated meeting transcripts |
 | `summaries` | AI-generated meeting summaries |
@@ -446,12 +479,24 @@ On every app mount, `AppContent` calls `checkAuth()` which hits `GET /api/v1/aut
 
 | Method | Path | Auth | Validator | Description |
 |---|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Public | `validateRegister` | Create new user. Returns user object + sets `accessToken` + `refreshToken` cookies. HTTP 201 on success, 409 on duplicate email, 400 on validation failure |
-| `POST` | `/api/v1/auth/login` | Public | `validateLogin` | Authenticate user. Returns user object + sets cookies. HTTP 200 on success, 401 on bad credentials |
+| `POST` | `/api/v1/auth/register` | Public | `validateRegister` | Create new user. Returns user object + sets `accessToken` + `refreshToken` cookies. HTTP 201 on success, 409 on duplicate email, 400 on validation failure. Rate limited: 5 req/15min |
+| `POST` | `/api/v1/auth/login` | Public | `validateLogin` | Authenticate user. Returns user object + sets cookies. HTTP 200 on success, 401 on bad credentials. Rate limited: 5 req/15min |
 | `POST` | `/api/v1/auth/logout` | Public | — | Clears DB refreshToken and clears cookies. HTTP 200 |
 | `POST` | `/api/v1/auth/refresh-token` | Public | — | Validates refreshToken cookie against DB. Issues new token pair. HTTP 200 or 401 |
 | `GET` | `/api/v1/auth/me` | `protect` | — | Returns `req.user` (from access token). HTTP 200 or 401 |
-| `GET` | `/api/v1/auth/profile` | `protect` | — | Alias for `/me` — returns same `req.user`. HTTP 200 or 401 |
+| `GET` | `/api/v1/auth/profile` | `protect` | — | Returns full user profile including avatar, bio, company, designation. HTTP 200 or 401 |
+| `PUT` | `/api/v1/auth/profile` | `protect` | — | Update user profile fields (fullName, bio, company, designation). HTTP 200 or 404 |
+| `POST` | `/api/v1/auth/avatar` | `protect` | Multer | Upload avatar image to Cloudinary. Deletes old avatar if exists. HTTP 200 or 400 |
+
+#### Meetings — `/api/v1/meetings`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/v1/meetings` | `protect` | Create new meeting. Auto-generates meetingCode. Returns meeting object. HTTP 201 |
+| `GET` | `/api/v1/meetings` | `protect` | Get all meetings where user is host or participant. Populates host and participants. HTTP 200 |
+| `GET` | `/api/v1/meetings/:id` | `protect` | Get single meeting by ID. User must be host or participant. HTTP 200 or 403/404 |
+| `PATCH` | `/api/v1/meetings/:id` | `protect` | Update meeting (title, description, scheduledFor, duration, status). Only host can update. HTTP 200 or 403/404 |
+| `DELETE` | `/api/v1/meetings/:id` | `protect` | Delete meeting. Only host can delete. HTTP 200 or 403/404 |
 
 ### Standard API Response Shapes
 
@@ -504,19 +549,17 @@ On every app mount, `AppContent` calls `checkAuth()` which hits `GET /api/v1/aut
 | `NODE_ENV` | `development` | Yes | Controls logging mode, cookie `secure` flag |
 | `CLIENT_URL` | `http://localhost:5173` | Yes | CORS allowed origin and Socket.io CORS |
 | `MONGODB_URI` | `mongodb+srv://...` | Yes | MongoDB Atlas connection string |
-| `JWT_SECRET` | `<strong random string>` | Yes | Signs access tokens (15 min) |
-| `JWT_REFRESH_SECRET` | `<strong random string>` | Yes | Signs refresh tokens (7 days) |
-| `CLOUDINARY_CLOUD_NAME` | `placeholder_cloud_name` | No (future) | Cloudinary upload config |
-| `CLOUDINARY_API_KEY` | `placeholder_api_key` | No (future) | Cloudinary upload config |
-| `CLOUDINARY_API_SECRET` | `placeholder_api_secret` | No (future) | Cloudinary upload config |
+| `JWT_SECRET` | `<strong random string>` | Yes | Signs access tokens (15 min). Server fails to start if missing |
+| `JWT_REFRESH_SECRET` | `<strong random string>` | Yes | Signs refresh tokens (7 days). Server fails to start if missing |
+| `CLOUDINARY_CLOUD_NAME` | `placeholder_cloud_name` | Yes | Cloudinary upload config for avatar storage |
+| `CLOUDINARY_API_KEY` | `placeholder_api_key` | Yes | Cloudinary upload config for avatar storage |
+| `CLOUDINARY_API_SECRET` | `placeholder_api_secret` | Yes | Cloudinary upload config for avatar storage |
 
 ### Client (Vite env — none currently defined in `.env` files)
 
 | Variable | Default Fallback | Purpose |
 |---|---|---|
 | `VITE_API_URL` | `/api` (Vite proxy) | Axios base URL. Set to full server URL in production |
-
-> **Security Note**: The server codebase contains hardcoded fallback values for `JWT_SECRET` and `JWT_REFRESH_SECRET` in `token.js` and `authMiddleware.js`. These must be replaced with strong secrets in `.env` before any deployment.
 
 ---
 
@@ -773,17 +816,17 @@ A full project health check was performed. All critical auth flows verified work
 
 ### Technical Debt
 
-| ID | Priority | Description |
-|---|---|---|
-| TD-001 | High | **Hardcoded JWT fallback secrets** in `token.js` and `authMiddleware.js`. These must be removed before production deployment. The server should fail to start if JWT secrets are not provided. |
-| TD-002 | High | **Rate limiting not applied**. `express-rate-limit` is installed but not mounted on any route. Auth endpoints (login/register) are vulnerable to brute-force attacks. |
-| TD-003 | Medium | **No email verification**. Users can register with unverified email addresses. |
-| TD-004 | Medium | **Refresh token not rotated per-device**. A single `refreshToken` field per user means a new login from a second device invalidates the first device's session. A `refreshTokens: [{ token, deviceInfo, createdAt }]` array pattern would support multi-device sessions. |
-| TD-005 | Medium | **`/api/v1/auth/profile` is a duplicate of `/api/v1/auth/me`**. Both endpoints return the same `req.user` data. `profile` should eventually support `PUT` for profile updates. |
-| TD-006 | Medium | **TanStack Query is largely unused**. It was part of the original scaffold. The auth flows use Zustand directly. A consistent data-fetching pattern needs to be decided. |
-| TD-007 | Low | **`client/src/lib/utils.js` `cn()` function is unused** in current app code (reserved for future shadcn/ui). Import was broken (BUG-001) but is now fixed. |
-| TD-008 | Low | **Dashboard is defined inline in `App.jsx`**. It should be moved to `client/src/pages/Dashboard.jsx` as the codebase grows. |
-| TD-009 | Low | **`server/src/uploads/`** directory exists but has no `.gitkeep` — it could accumulate local files unexpectedly. |
+| ID | Priority | Description | Status |
+|---|---|---|---|
+| TD-001 | High | **Hardcoded JWT fallback secrets** in `token.js` and `authMiddleware.js`. These must be removed before production deployment. The server should fail to start if JWT secrets are not provided. | ✅ Resolved in Sprint 1 |
+| TD-002 | High | **Rate limiting not applied**. `express-rate-limit` is installed but not mounted on any route. Auth endpoints (login/register) are vulnerable to brute-force attacks. | ✅ Resolved in Sprint 1 |
+| TD-003 | Medium | **No email verification**. Users can register with unverified email addresses. | ⏳ Pending |
+| TD-004 | Medium | **Refresh token not rotated per-device**. A single `refreshToken` field per user means a new login from a second device invalidates the first device's session. A `refreshTokens: [{ token, deviceInfo, createdAt }]` array pattern would support multi-device sessions. | ⏳ Pending |
+| TD-005 | Medium | **`/api/v1/auth/profile` is a duplicate of `/api/v1/auth/me`**. Both endpoints return the same `req.user` data. `profile` should eventually support `PUT` for profile updates. | ✅ Resolved in Sprint 1 (PUT endpoint added) |
+| TD-006 | Medium | **TanStack Query is largely unused**. It was part of the original scaffold. The auth flows use Zustand directly. A consistent data-fetching pattern needs to be decided. | ⏳ Pending |
+| TD-007 | Low | **`client/src/lib/utils.js` `cn()` function is unused** in current app code (reserved for future shadcn/ui). Import was broken (BUG-001) but is now fixed. | ⏳ Pending |
+| TD-008 | Low | **Dashboard is defined inline in `App.jsx`**. It should be moved to `client/src/pages/Dashboard.jsx` as the codebase grows. | ⏳ Pending |
+| TD-009 | Low | **`server/src/uploads/`** directory exists but has no `.gitkeep` — it could accumulate local files unexpectedly. | ⏳ Pending |
 
 ---
 
@@ -791,35 +834,55 @@ A full project health check was performed. All critical auth flows verified work
 
 The following order is recommended based on foundational dependencies:
 
-### Phase 1 — Authentication Hardening (Current Phase, Minor Remaining Work)
+### Phase 1 — Authentication Hardening & Backend Foundation ✅ COMPLETED (Sprint 1)
 - [x] Fix all 5 known linting/runtime bugs (BUG-001 through BUG-005) — completed 2026-07-01
-- [ ] Remove hardcoded JWT fallback secrets; add startup validation (TD-001)
-- [ ] Apply rate limiting to `/api/v1/auth/login` and `/api/v1/auth/register` (TD-002)
-- [ ] Implement `PUT /api/v1/auth/profile` (update fullName, password)
+- [x] Remove hardcoded JWT fallback secrets; add startup validation (TD-001)
+- [x] Apply rate limiting to `/api/v1/auth/login` and `/api/v1/auth/register` (TD-002)
+- [x] Extend User model with avatar, bio, company, designation
+- [x] Implement GET/PUT `/api/v1/auth/profile` endpoints
+- [x] Configure Cloudinary and Multer for avatar uploads
+- [x] Implement POST `/api/v1/auth/avatar` endpoint
+- [x] Create Meeting Mongoose model with auto-generated meetingCode
+- [x] Implement full Meeting CRUD API (`/api/v1/meetings`)
+- [x] Implement Socket.io join-room/leave-room infrastructure
 
-### Phase 2 — User Management
+### Phase 2 — Frontend Application Shell ✅ COMPLETED (Sprint 2A)
+- [x] Create reusable UI components (Button, Card, PageHeader, LoadingSpinner, EmptyState)
+- [x] Implement protected application layout (Sidebar, Navbar, Mobile navigation)
+- [x] Create Dashboard page with premium UI and static data
+- [x] Create Meetings page layout with placeholders
+- [x] Create Profile page UI with placeholders
+- [x] Create Settings page basic layout
+- [x] Configure routing for new protected pages
+- [x] Implement glassmorphism dark theme with violet accent
+
+### Phase 3 — User Management (Next Phase)
 - [ ] Forgot password / reset password flow (email-based)
 - [ ] Email verification on registration
-- [ ] Avatar upload via Cloudinary
 - [ ] Admin user management endpoints
+- [ ] Password change endpoint (separate from profile update)
 
-### Phase 3 — Meeting Core
-- [ ] `Meeting` Mongoose model (title, host, participants, status, startTime, endTime)
-- [ ] Meeting CRUD API (`/api/v1/meetings`)
-- [ ] Meeting page UI (create, join, list)
+### Phase 4 — Meeting Frontend Integration
+- [ ] Connect Dashboard to meeting APIs
+- [ ] Connect Meetings page to meeting CRUD APIs
+- [ ] Connect Profile page to profile APIs
+- [ ] Implement avatar upload functionality
+- [ ] Meeting details page
+- [ ] Participant management UI
+- [ ] Meeting status updates (ongoing/completed)
 
-### Phase 4 — Real-Time Communication
-- [ ] Socket.io room management (join/leave meeting rooms)
+### Phase 5 — Real-Time Communication
 - [ ] WebRTC peer connection signalling (offer/answer/ICE via Socket.io)
 - [ ] Video/audio streaming UI with participant tiles
 - [ ] Screen sharing
+- [ ] Mute/unmute controls
 
-### Phase 5 — AI Features
+### Phase 6 — AI Features
 - [ ] Meeting transcription integration
 - [ ] AI-powered meeting summary generation
 - [ ] Transcript storage and retrieval API
 
-### Phase 6 — Production Readiness
+### Phase 7 — Production Readiness
 - [ ] Production build pipeline
 - [ ] Environment-specific configuration
 - [ ] Deployment (server + client)
@@ -829,12 +892,29 @@ The following order is recommended based on foundational dependencies:
 
 ## 18. Next Recommended Task
 
-**Apply rate limiting** to the auth endpoints (TD-002) and **remove hardcoded JWT fallback secrets** with startup validation (TD-001). These are the highest-priority remaining hygiene tasks before building meeting features.
+**Sprint 2A (Frontend Application Shell) is now complete.** The following modules have been implemented:
 
-Specifically:
-1. Add `express-rate-limit` to the auth router in `authRoutes.js`
-2. Remove hardcoded JWT secret fallbacks from `token.js` and `authMiddleware.js`; fail fast if env vars are missing
-3. Begin Phase 2 user management (profile updates, password reset) or Phase 3 meeting core
+- Reusable UI components (Button, Card, PageHeader, LoadingSpinner, EmptyState)
+- Protected application layout (Sidebar, Navbar, Mobile navigation with responsive design)
+- Dashboard page with premium UI and static placeholder data
+- Meetings page layout with search, filters, and meeting card placeholders
+- Profile page UI with avatar, personal information, and account settings placeholders
+- Settings page with notifications, privacy, appearance, and language/region sections
+- Glassmorphism dark theme with violet accent
+- Fully responsive design
+
+**Next Phase: Sprint 2B — Meeting Frontend Integration**
+
+Recommended tasks for the next sprint:
+1. Connect Dashboard to meeting APIs (display real meeting statistics)
+2. Connect Meetings page to meeting CRUD APIs (create, read, update, delete meetings)
+3. Connect Profile page to profile APIs (fetch and update user profile)
+4. Implement avatar upload functionality with Cloudinary integration
+5. Create meeting details page
+6. Implement participant management UI
+7. Add meeting status updates (ongoing/completed)
+
+These features will integrate the frontend shell with the backend APIs implemented in Sprint 1, creating a fully functional meeting management system.
 
 ---
 

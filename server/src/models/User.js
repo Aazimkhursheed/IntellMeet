@@ -30,6 +30,26 @@ const userSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+    avatar: {
+      type: String,
+      default: null,
+    },
+    bio: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [500, 'Bio cannot exceed 500 characters'],
+    },
+    company: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    designation: {
+      type: String,
+      default: '',
+      trim: true,
+    },
   },
   {
     timestamps: true,

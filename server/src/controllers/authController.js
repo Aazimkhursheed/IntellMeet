@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import { sendTokenCookies, clearTokenCookies } from '../utils/token.js';
 import jwt from 'jsonwebtoken';
+import { cloudinary } from '../config/cloudinary.js';
 
 // @desc    Register a new user
 // @route   POST /api/v1/auth/register
@@ -94,10 +95,7 @@ export const refreshToken = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(
-        refreshToken,
-        process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_token_987654321_change_me_in_prod'
-      );
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     } catch {
       return res.status(401).json({ message: 'Invalid or expired refresh token' });
     }
@@ -126,5 +124,94 @@ export const getCurrentUser = async (req, res) => {
 // @route   GET /api/v1/auth/profile
 // @access  Private
 export const getUserProfile = async (req, res) => {
-  res.status(200).json(req.user);
+  const user = await User.findById(req.user.id);
+  res.status(200).json({
+    id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    bio: user.bio,
+    company: user.company,
+    designation: user.designation,
+    createdAt: user.createdAt,
+  });
+};
+
+// @desc    Update user profile
+// @route   PUT /api/v1/auth/profile
+// @access  Private
+export const updateUserProfile = async (req, res, next) => {
+  try {
+    const { fullName, bio, company, designation } = req.body;
+
+    // Build update object with only provided fields
+    const updateFields = {};
+    if (fullName !== undefined) updateFields.fullName = fullName;
+    if (bio !== undefined) updateFields.bio = bio;
+    if (company !== undefined) updateFields.company = company;
+    if (designation !== undefined) updateFields.designation = designation;
+
+    // Update user
+    const user = await User.findByIdAndUpdate(req.user.id, updateFields, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      bio: user.bio,
+      company: user.company,
+      designation: user.designation,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Upload user avatar
+// @route   POST /api/v1/auth/avatar
+// @access  Private
+export const uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Get the user
+    const user = await User.findById(req.user.id);
+
+    // Delete old avatar if exists
+    if (user.avatar) {
+      const publicId = user.avatar.split('/').pop().split('.')[0];
+      await cloudinary.uploader.destroy(`intellmeet/avatars/${publicId}`);
+    }
+
+    // Update user with new avatar URL
+    user.avatar = req.file.path;
+    await user.save();
+
+    res.status(200).json({
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      bio: user.bio,
+      company: user.company,
+      designation: user.designation,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    next(error);
+  }
 };

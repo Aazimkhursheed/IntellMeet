@@ -1,70 +1,16 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, LogIn, UserPlus, Sparkles } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { LogIn, UserPlus, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useAuthStore from './store/useAuthStore.js';
 import ProtectedRoute from './components/layout/ProtectedRoute.jsx';
+import AppLayout from './components/layout/AppLayout.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
-
-function Dashboard() {
-  const { user, logout, isLoading } = useAuthStore();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
-  };
-
-  return (
-    <div className="max-w-xl w-full mx-auto px-4 py-8 space-y-6">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 shadow-xl space-y-6">
-        <div className="flex items-center space-x-3 border-b border-zinc-800/80 pb-4">
-          <div className="w-12 h-12 bg-violet-600/10 border border-violet-500/20 rounded-xl flex items-center justify-center text-violet-400">
-            <UserIcon size={24} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Your Profile</h2>
-            <p className="text-xs text-zinc-400">Securely authenticated meeting session</p>
-          </div>
-        </div>
-
-        <div className="space-y-4 text-sm">
-          <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-            <span className="text-zinc-400 font-medium">Full Name</span>
-            <span className="text-white font-semibold">{user?.fullName}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-            <span className="text-zinc-400 font-medium">Email Address</span>
-            <span className="text-white font-mono">{user?.email}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-zinc-800/50">
-            <span className="text-zinc-400 font-medium">Account Role</span>
-            <span className="inline-flex items-center px-2.5 py-0.5 bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-semibold rounded-full capitalize">
-              {user?.role}
-            </span>
-          </div>
-          <div className="flex justify-between items-center py-2">
-            <span className="text-zinc-400 font-medium">Joined On</span>
-            <span className="text-zinc-300">
-              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-            </span>
-          </div>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          disabled={isLoading}
-          className="w-full py-2.5 px-4 bg-red-600/15 hover:bg-red-600/20 active:bg-red-600/30 text-red-400 font-semibold border border-red-500/25 rounded-xl transition duration-200 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
-        >
-          <LogOut size={16} />
-          <span>{isLoading ? 'Signing out...' : 'Sign Out Session'}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
+import Dashboard from './pages/Dashboard.jsx';
+import Meetings from './pages/Meetings.jsx';
+import Profile from './pages/Profile.jsx';
+import Settings from './pages/Settings.jsx';
 
 function WelcomeScreen() {
   const { isAuthenticated, user } = useAuthStore();
@@ -215,9 +161,15 @@ function AppContent() {
           <Route path="/" element={<WelcomeScreen />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          {/* Protected Routes Group */}
+          {/* Protected Routes Group with AppLayout */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/meetings" element={<Meetings />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
           </Route>
         </Routes>
       </main>
