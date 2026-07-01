@@ -3,6 +3,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import app from './app.js';
 import connectDB from './config/db.js';
+import { initializeMeetingSocket } from './socket/meetingSocket.js';
 
 // Configuration: Load environment variables
 dotenv.config();
@@ -43,30 +44,8 @@ const io = new Server(server, {
   },
 });
 
-// Socket.io event orchestration
-io.on('connection', (socket) => {
-  console.log(`Socket client connected: ${socket.id}`);
-
-  // Join a meeting room
-  socket.on('join-room', ({ meetingId, userId }) => {
-    socket.join(meetingId);
-    console.log(`User ${userId} joined room ${meetingId}`);
-    // Notify others in the room
-    socket.to(meetingId).emit('user-joined', { userId, socketId: socket.id });
-  });
-
-  // Leave a meeting room
-  socket.on('leave-room', ({ meetingId, userId }) => {
-    socket.leave(meetingId);
-    console.log(`User ${userId} left room ${meetingId}`);
-    // Notify others in the room
-    socket.to(meetingId).emit('user-left', { userId, socketId: socket.id });
-  });
-
-  socket.on('disconnect', () => {
-    console.log(`Socket client disconnected: ${socket.id}`);
-  });
-});
+// Initialize Socket.io meeting handlers
+initializeMeetingSocket(io);
 
 // Start HTTP and WebSocket server
 server.listen(PORT, () => {

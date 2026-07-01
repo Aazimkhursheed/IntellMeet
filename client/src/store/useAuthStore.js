@@ -64,6 +64,43 @@ const useAuthStore = create((set) => ({
       set({ user: null, isAuthenticated: false, error: null, isLoading: false });
     }
   },
+
+  updateProfile: async (profileData) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.put('/v1/auth/profile', profileData);
+      set({ user: response.data, error: null });
+      return { success: true };
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Failed to update profile';
+      set({ error: errMsg });
+      return { success: false, error: errMsg };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  uploadAvatar: async (file) => {
+    set({ isLoading: true, error: null });
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await api.post('/v1/auth/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      set({ user: response.data, error: null });
+      return { success: true };
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Failed to upload avatar';
+      set({ error: errMsg });
+      return { success: false, error: errMsg };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 }));
 
 export default useAuthStore;

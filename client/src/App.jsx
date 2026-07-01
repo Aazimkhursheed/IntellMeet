@@ -9,8 +9,11 @@ import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Meetings from './pages/Meetings.jsx';
+import MeetingDetails from './pages/MeetingDetails.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
+import MeetingLobby from './pages/MeetingLobby.jsx';
+import MeetingRoom from './pages/MeetingRoom.jsx';
 
 function WelcomeScreen() {
   const { isAuthenticated, user } = useAuthStore();
@@ -166,8 +169,11 @@ function AppContent() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/meetings" element={<Meetings />} />
+              <Route path="/meetings/:id" element={<MeetingDetails />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/meeting/:meetingCode" element={<MeetingLobby />} />
+              <Route path="/meeting-room/:meetingCode" element={<MeetingRoom />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Route>
