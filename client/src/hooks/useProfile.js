@@ -20,7 +20,7 @@ export const useProfile = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: profileService.updateProfile,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['auth'] }); // Also invalidate auth to update navbar
       toast.success('Profile updated successfully');
@@ -33,7 +33,7 @@ export const useProfile = () => {
   // Upload avatar mutation
   const uploadAvatarMutation = useMutation({
     mutationFn: profileService.uploadAvatar,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['auth'] }); // Also invalidate auth to update navbar
       toast.success('Avatar uploaded successfully');

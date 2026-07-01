@@ -1,20 +1,22 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { User, Monitor } from 'lucide-react';
 
 /**
  * VideoGrid component - Responsive grid layout for participant videos
  */
-const VideoGrid = ({ participants, localStream, currentUserId }) => {
+const VideoGrid = ({ participants, localStream, currentUserId, isScreenSharing }) => {
   const allParticipants = [
     {
       userId: currentUserId,
       userName: 'You',
       stream: localStream,
       isLocal: true,
+      isScreenSharing,
     },
     ...participants.map(p => ({
       ...p,
       isLocal: false,
+      isScreenSharing: false,
     })),
   ];
 
@@ -35,6 +37,7 @@ const VideoGrid = ({ participants, localStream, currentUserId }) => {
           participant={participant}
           stream={participant.stream}
           isLocal={participant.isLocal}
+          isScreenSharing={participant.isScreenSharing}
         />
       ))}
     </div>
@@ -44,7 +47,7 @@ const VideoGrid = ({ participants, localStream, currentUserId }) => {
 /**
  * ParticipantTile component - Individual video/audio tile
  */
-const ParticipantTile = ({ participant, stream, isLocal }) => {
+const ParticipantTile = ({ participant, stream, isLocal, isScreenSharing }) => {
   const videoRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -77,6 +80,14 @@ const ParticipantTile = ({ participant, stream, isLocal }) => {
               <p className="text-zinc-600 text-xs">Camera off</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Screen sharing indicator */}
+      {isScreenSharing && (
+        <div className="absolute top-3 left-3 bg-violet-600 text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1">
+          <Monitor size={12} />
+          <span>Sharing screen</span>
         </div>
       )}
 

@@ -16,10 +16,11 @@ const rtcConfig = {
 /**
  * Hook to manage WebRTC peer connections
  */
-export const useWebRTC = (meetingId, localStream) => {
+export const useWebRTC = (meetingId, localStream, screenStream) => {
   const peerConnections = useRef(new Map()); // socketId -> RTCPeerConnection
   const remoteStreams = useRef(new Map()); // socketId -> MediaStream
   const isInitiator = useRef(false);
+  const originalVideoTrack = useRef(null); // Store original camera track
 
   /**
    * Create a new peer connection
@@ -39,9 +40,13 @@ export const useWebRTC = (meetingId, localStream) => {
     const pc = new RTCPeerConnection(rtcConfig);
 
     // Add local stream tracks to the connection
-    localStream.getTracks().forEach(track => {
-      pc.addTrack(track, localStream);
-    });
+    // Use screen stream if available, otherwise use camera stream
+    const streamToUse = screenStream || localStream;
+    if (streamToUse) {
+      streamToUse.getTracks().forEach(track => {
+        pc.addTrack(track, streamToUse);
+      });
+    }
 
     // Handle incoming remote stream
     pc.ontrack = (event) => {
@@ -104,7 +109,7 @@ export const useWebRTC = (meetingId, localStream) => {
     }
 
     return pc;
-  }, [localStream]);
+  }, [localStream, screenStream]);
 
   /**
    * Handle incoming offer
@@ -195,6 +200,69 @@ export const useWebRTC = (meetingId, localStream) => {
   }, [localStream, createPeerConnection]);
 
   /**
+   * Replace video track in all peer connections (for screen sharing)
+   */
+  const replaceVideoTrack = useCallback(async (newStream) => {
+    const videoTrack = newStream.getVideoTracks()[0];
+    if (!videoTrack) {
+      console.error('No video track in new stream');
+      return;
+    }
+
+    // Store original track if not already stored
+    if (!originalVideoTrack.current && localStream) {
+      originalVideoTrack.current = localStream.getVideoTracks()[0];
+    }
+
+    // Replace track in all peer connections
+    peerConnections.current.forEach((pc, socketId) => {
+      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+      if (sender) {
+        sender.replaceTrack(videoTrack)
+          .then(() => {
+            console.log(`Replaced video track for ${socketId}`);
+          })
+          .catch(err => {
+            console.error(`Error replacing track for ${socketId}:`, err);
+          });
+      }
+    });
+  }, [localStream]);
+
+  /**
+   * Restore original camera track in all peer connections
+   */
+  const restoreCameraTrack = useCallback(async () => {
+    if (!originalVideoTrack.current || !localStream) {
+      console.warn('No original video track to restore');
+      return;
+    }
+
+    const cameraTrack = localStream.getVideoTracks()[0];
+    if (!cameraTrack) {
+      console.error('No camera track in local stream');
+      return;
+    }
+
+    // Replace track in all peer connections
+    peerConnections.current.forEach((pc, socketId) => {
+      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+      if (sender) {
+        sender.replaceTrack(cameraTrack)
+          .then(() => {
+            console.log(`Restored camera track for ${socketId}`);
+          })
+          .catch(err => {
+            console.error(`Error restoring track for ${socketId}:`, err);
+          });
+      }
+    });
+
+    // Clear stored original track
+    originalVideoTrack.current = null;
+  }, [localStream]);
+
+  /**
    * Close all peer connections
    */
   const closeAllConnections = useCallback(() => {
@@ -253,6 +321,8 @@ export const useWebRTC = (meetingId, localStream) => {
     closeAllConnections,
     getRemoteStream,
     getAllRemoteStreams,
+    replaceVideoTrack,
+    restoreCameraTrack,
     peerConnections: peerConnections.current,
   };
 };

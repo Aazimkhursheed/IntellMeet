@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PhoneOff, Users, Clock, Copy, Crown } from 'lucide-react';
+import { Users, Clock, Copy, Crown, Sparkles, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMeetingStore } from '../store/useMeetingStore.js';
 import { socketService } from '../services/socketService.js';
 import { useWebRTC } from '../hooks/useWebRTC.js';
+import { useAI } from '../hooks/useAI.js';
 import VideoGrid from '../components/meeting/VideoGrid.jsx';
 import MeetingControls from '../components/meeting/MeetingControls.jsx';
+import ChatPanel from '../components/meeting/ChatPanel.jsx';
+import SummaryModal from '../components/ai/SummaryModal.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 
 /**
@@ -21,12 +24,11 @@ const MeetingRoom = () => {
     meetingTitle,
     isHost,
     localStream,
+    screenStream,
+    isScreenSharing,
     participants,
     participantCount,
     isInMeeting,
-    isLoading,
-    setLoading,
-    setError,
     addParticipant,
     removeParticipant,
     setParticipants,
@@ -36,14 +38,19 @@ const MeetingRoom = () => {
 
   const [duration, setDurationState] = useState(0);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const durationIntervalRef = useRef(null);
+
+  // AI insights
+  const { summary, actionItems, isLoading: aiLoading, isGenerating, generateInsights } = useAI(meetingId);
 
   // Initialize WebRTC
   const {
     initializePeerConnections,
     closeAllConnections,
-    getRemoteStream,
-  } = useWebRTC(meetingId, localStream);
+    replaceVideoTrack,
+    restoreCameraTrack,
+  } = useWebRTC(meetingId, localStream, screenStream);
 
   // Update duration timer
   useEffect(() => {
@@ -73,6 +80,19 @@ const MeetingRoom = () => {
     }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Handle screen sharing changes
+  useEffect(() => {
+    if (!isInMeeting) return;
+
+    if (isScreenSharing && screenStream) {
+      // Replace video track with screen track
+      replaceVideoTrack(screenStream);
+    } else {
+      // Restore camera track
+      restoreCameraTrack();
+    }
+  }, [isScreenSharing, screenStream, isInMeeting, replaceVideoTrack, restoreCameraTrack]);
 
   // Set up socket event listeners
   useEffect(() => {
@@ -152,10 +172,13 @@ const MeetingRoom = () => {
     }
   };
 
-  const handleCopyMeetingLink = () => {
-    const meetingUrl = `${window.location.origin}/meeting/${meetingCode}`;
-    navigator.clipboard.writeText(meetingUrl);
-    toast.success('Meeting link copied to clipboard');
+  const handleGenerateInsights = async () => {
+    try {
+      await generateInsights();
+      setShowSummaryModal(true);
+    } catch (error) {
+      console.error('Error generating insights:', error);
+    }
   };
 
   // Loading state
@@ -224,11 +247,42 @@ const MeetingRoom = () => {
           participants={participants}
           localStream={localStream}
           currentUserId={useMeetingStore.getState().user?.id}
+          isScreenSharing={isScreenSharing}
         />
       </div>
 
       {/* Meeting controls */}
       <MeetingControls onLeaveMeeting={handleLeaveMeeting} />
+
+      {/* AI Insights Button */}
+      <button
+        onClick={handleGenerateInsights}
+        disabled={isGenerating}
+        className="fixed right-6 bottom-24 bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white p-3 rounded-full shadow-lg shadow-violet-600/30 transition z-40 flex items-center space-x-2"
+        title="Generate AI insights"
+      >
+        {isGenerating ? (
+          <Loader2 size={20} className="animate-spin" />
+        ) : (
+          <>
+            <Sparkles size={20} />
+            <span className="text-sm font-medium pr-1">AI Insights</span>
+          </>
+        )}
+      </button>
+
+      {/* Chat panel */}
+      <ChatPanel />
+
+      {/* Summary Modal */}
+      <SummaryModal
+        isOpen={showSummaryModal}
+        onClose={() => setShowSummaryModal(false)}
+        summary={summary}
+        actionItems={actionItems}
+        isLoading={aiLoading}
+        error={null}
+      />
     </div>
   );
 };

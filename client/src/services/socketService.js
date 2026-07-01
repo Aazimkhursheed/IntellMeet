@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { useAuthStore } from '../store/useAuthStore.js';
+import useAuthStore from '../store/useAuthStore.js';
 
 class SocketService {
   constructor() {
@@ -177,6 +177,31 @@ class SocketService {
   onIceCandidate(callback) {
     if (!this.socket) return;
     this.socket.on('ice-candidate', callback);
+  }
+
+  /**
+   * Send chat message
+   */
+  sendChatMessage(meetingId, message) {
+    if (!this.socket) return;
+    
+    const user = useAuthStore.getState().user;
+    
+    this.socket.emit('chat-message', {
+      meetingId,
+      userId: user?.id,
+      userName: user?.fullName,
+      message,
+      timestamp: new Date(),
+    });
+  }
+
+  /**
+   * Listen for chat messages
+   */
+  onChatMessage(callback) {
+    if (!this.socket) return;
+    this.socket.on('chat-message', callback);
   }
 
   /**

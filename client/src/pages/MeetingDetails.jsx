@@ -1,92 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Video, Users, Calendar, Clock, Copy, ExternalLink, UserPlus, MoreVertical, CheckCircle2, XCircle, PlayCircle } from 'lucide-react';
+import { Calendar, Clock, Video, Trash2, ChevronDown } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useMeetings } from '../hooks/useMeetings.js';
+import useAuthStore from '../store/useAuthStore.js';
 import PageHeader from '../components/ui/PageHeader.jsx';
-import { Card, CardBody, CardHeader } from '../components/ui/Card.jsx';
+import { Card, CardBody } from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
-import { useMeetings } from '../hooks/useMeetings.js';
-import { useAuthStore } from '../store/useAuthStore.js';
-import toast from 'react-hot-toast';
 
+/**
+ * MeetingDetails page - View and manage individual meeting
+ */
 const MeetingDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { meetings, isLoading, error, updateMeeting, deleteMeeting } = useMeetings();
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
-  const meeting = meetings?.find((m) => m._id === id);
+  const { meeting, isLoading, updateMeeting, deleteMeeting } = useMeetings();
 
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-
+  // Fetch meeting details
   useEffect(() => {
-    if (!isLoading && !meeting) {
-      toast.error('Meeting not found');
-      navigate('/meetings');
-    }
-  }, [meeting, isLoading, navigate]);
+    // The useMeetings hook should handle fetching the specific meeting
+    // For now, we'll rely on the hook's internal logic
+  }, [id]);
 
-  const isHost = meeting?.host?._id === user?.id;
-
+  // Handle status update
   const handleStatusUpdate = async (newStatus) => {
-    if (!isHost) {
-      toast.error('Only the host can update meeting status');
-      return;
-    }
-
-    setIsUpdating(true);
     try {
-      await updateMeeting(meeting._id, { status: newStatus });
-      toast.success(`Meeting marked as ${newStatus}`);
-      setShowStatusMenu(false);
-    } catch (error) {
+      await updateMeeting(id, { status: newStatus });
+      toast.success(`Meeting status updated to ${newStatus}`);
+      setStatusMenuOpen(false);
+    } catch {
       toast.error('Failed to update meeting status');
-    } finally {
-      setIsUpdating(false);
     }
   };
 
+  // Handle delete meeting
   const handleDeleteMeeting = async () => {
-    if (!isHost) {
-      toast.error('Only the host can delete the meeting');
-      return;
-    }
-
-    if (window.confirm(`Are you sure you want to delete "${meeting.title}"?`)) {
+    if (window.confirm('Are you sure you want to delete this meeting?')) {
       try {
-        await deleteMeeting(meeting._id);
+        await deleteMeeting(id);
         toast.success('Meeting deleted successfully');
         navigate('/meetings');
-      } catch (error) {
+      } catch {
         toast.error('Failed to delete meeting');
       }
     }
   };
 
-  const copyMeetingCode = () => {
-    if (meeting?.meetingCode) {
-      navigator.clipboard.writeText(meeting.meetingCode);
-      toast.success('Meeting code copied to clipboard');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+  // Handle join meeting
+  const handleJoinMeeting = () => {
+    navigate(`/meeting/${meeting?.meetingCode}`);
   };
 
   // Loading state
@@ -95,13 +62,9 @@ const MeetingDetails = () => {
       <div className="space-y-6">
         <PageHeader
           title="Meeting Details"
-          subtitle="View and manage meeting information"
-          action={
-            <Button variant="ghost" onClick={() => navigate('/meetings')}>
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Meetings
-            </Button>
-          }
+          subtitle="Loading meeting information..."
+          backButton
+          onBack={() => navigate('/meetings')}
         />
         <LoadingSpinner size="lg" text="Loading meeting details..." />
       </div>
@@ -109,28 +72,24 @@ const MeetingDetails = () => {
   }
 
   // Error state
-  if (error) {
+  if (!meeting) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Meeting Details"
-          subtitle="View and manage meeting information"
-          action={
-            <Button variant="ghost" onClick={() => navigate('/meetings')}>
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Meetings
-            </Button>
-          }
+          subtitle="Meeting not found"
+          backButton
+          onBack={() => navigate('/meetings')}
         />
         <Card glass>
           <CardBody>
             <EmptyState
               type="default"
-              title="Failed to load meeting"
-              description={error.response?.data?.message || error.message || 'Unable to fetch meeting details. Please try again later.'}
+              title="Meeting not found"
+              description="The meeting you're looking for doesn't exist or you don't have access to it."
               action={
-                <Button variant="primary" onClick={() => window.location.reload()}>
-                  Retry
+                <Button variant="primary" onClick={() => navigate('/meetings')}>
+                  Back to Meetings
                 </Button>
               }
             />
@@ -140,37 +99,7 @@ const MeetingDetails = () => {
     );
   }
 
-  // Meeting not found
-  if (!meeting) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Meeting Details"
-          subtitle="View and manage meeting information"
-          action={
-            <Button variant="ghost" onClick={() => navigate('/meetings')}>
-              <ArrowLeft size={16} className="mr-2" />
-              Back to Meetings
-            </Button>
-          }
-        />
-        <Card glass>
-          <CardBody>
-            <EmptyState
-              type="meetings"
-              title="Meeting not found"
-              description="The meeting you're looking for doesn't exist or you don't have access to it."
-              action={
-                <Button variant="primary" onClick={() => navigate('/meetings')}>
-                  View All Meetings
-                </Button>
-              }
-            />
-          </CardBody>
-        </Card>
-      </div>
-    );
-  }
+  const isHost = meeting.host?._id === user?.id;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -190,188 +119,130 @@ const MeetingDetails = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Meeting Details"
-        subtitle="View and manage meeting information"
+        title={meeting.title}
+        subtitle={`Hosted by ${meeting.host?.fullName || 'Unknown'}`}
+        backButton
+        onBack={() => navigate('/meetings')}
         action={
-          <Button variant="ghost" onClick={() => navigate('/meetings')}>
-            <ArrowLeft size={16} className="mr-2" />
-            Back to Meetings
-          </Button>
+          isHost && (
+            <div className="flex items-center space-x-2">
+              <Button variant="primary" onClick={handleJoinMeeting}>
+                <Video size={16} className="mr-2" />
+                Join Meeting
+              </Button>
+              <Button variant="danger" onClick={handleDeleteMeeting}>
+                <Trash2 size={16} />
+              </Button>
+            </div>
+          )
         }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Meeting Info */}
+        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           <Card glass>
-            <CardBody className="space-y-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-white mb-2">{meeting.title}</h2>
-                  <p className="text-zinc-400">{meeting.description || 'No description provided'}</p>
-                </div>
-                <div className="relative">
-                  <button
-                    onClick={() => setShowStatusMenu(!showStatusMenu)}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium capitalize"
-                    disabled={!isHost}
-                  >
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize ${getStatusColor(meeting.status)}`}>
-                      {meeting.status}
-                    </span>
-                  </button>
-                  {isHost && showStatusMenu && (
-                    <div className="absolute right-0 top-12 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-10 min-w-[180px]">
-                      <button
-                        onClick={() => handleStatusUpdate('scheduled')}
-                        className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-800 flex items-center space-x-2"
-                      >
-                        <CheckCircle2 size={14} className="text-violet-400" />
-                        <span>Scheduled</span>
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate('ongoing')}
-                        className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-800 flex items-center space-x-2"
-                      >
-                        <PlayCircle size={14} className="text-blue-400" />
-                        <span>Ongoing</span>
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate('completed')}
-                        className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-800 flex items-center space-x-2"
-                      >
-                        <CheckCircle2 size={14} className="text-emerald-400" />
-                        <span>Completed</span>
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate('cancelled')}
-                        className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-800 flex items-center space-x-2"
-                      >
-                        <XCircle size={14} className="text-red-400" />
-                        <span>Cancelled</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+            <CardBody className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2">Description</h3>
+                <p className="text-zinc-400">
+                  {meeting.description || 'No description provided'}
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3 p-4 bg-zinc-950/60 border border-zinc-800/40 rounded-xl">
-                  <Calendar size={20} className="text-violet-400" />
-                  <div>
-                    <p className="text-xs text-zinc-500">Date</p>
-                    <p className="text-sm text-white font-medium">{formatDate(meeting.scheduledFor)}</p>
-                  </div>
+              <div className="flex items-center space-x-4 text-sm text-zinc-400 pt-4 border-t border-zinc-800">
+                <div className="flex items-center space-x-2">
+                  <Calendar size={16} />
+                  <span>{new Date(meeting.scheduledFor).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center space-x-3 p-4 bg-zinc-950/60 border border-zinc-800/40 rounded-xl">
-                  <Clock size={20} className="text-violet-400" />
-                  <div>
-                    <p className="text-xs text-zinc-500">Time & Duration</p>
-                    <p className="text-sm text-white font-medium">
-                      {formatTime(meeting.scheduledFor)} • {meeting.duration} min
-                    </p>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <Clock size={16} />
+                  <span>{new Date(meeting.scheduledFor).toLocaleTimeString()}</span>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-3 p-4 bg-zinc-950/60 border border-zinc-800/40 rounded-xl">
-                <Users size={20} className="text-violet-400" />
-                <div className="flex-1">
-                  <p className="text-xs text-zinc-500">Participants</p>
-                  <p className="text-sm text-white font-medium">
-                    {meeting.participants?.length || 0} participant{(meeting.participants?.length || 0) !== 1 ? 's' : ''}
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <Clock size={16} />
+                  <span>{meeting.duration} minutes</span>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-3 p-4 bg-zinc-950/60 border border-zinc-800/40 rounded-xl">
-                <div className="flex-1">
-                  <p className="text-xs text-zinc-500 mb-1">Meeting Code</p>
-                  <p className="text-sm text-white font-mono font-medium">{meeting.meetingCode}</p>
-                </div>
-                <Button variant="secondary" size="sm" onClick={copyMeetingCode}>
-                  <Copy size={14} className="mr-2" />
-                  Copy
-                </Button>
-              </div>
-
-              <div className="flex space-x-3 pt-4 border-t border-zinc-800/50">
-                <Button 
-                  variant="primary" 
-                  className="flex-1"
-                  onClick={() => navigate(`/meeting/${meeting.meetingCode}`)}
-                >
-                  <Video size={16} className="mr-2" />
-                  Join Meeting
-                </Button>
-                {isHost && (
-                  <Button variant="danger" size="sm" onClick={handleDeleteMeeting}>
-                    Delete Meeting
-                  </Button>
-                )}
               </div>
             </CardBody>
           </Card>
         </div>
 
-        {/* Sidebar - Host & Participants */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Host Info */}
+          {/* Status Card */}
           <Card glass>
-            <CardHeader>
-              <h3 className="text-lg font-semibold text-white">Host</h3>
-            </CardHeader>
             <CardBody>
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-violet-600/10 border-2 border-violet-500/20 rounded-full flex items-center justify-center">
-                  <Users size={24} className="text-violet-400" />
+              <h3 className="text-lg font-semibold text-white mb-4">Status</h3>
+              {isHost ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setStatusMenuOpen(!statusMenuOpen)}
+                    className="w-full flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white hover:bg-zinc-800 transition"
+                  >
+                    <span className={`text-sm px-3 py-1 rounded-full capitalize ${getStatusColor(meeting.status)}`}>
+                      {meeting.status}
+                    </span>
+                    <ChevronDown size={16} className="text-zinc-400" />
+                  </button>
+                  {statusMenuOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-10 overflow-hidden">
+                      {['scheduled', 'ongoing', 'completed', 'cancelled'].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => handleStatusUpdate(status)}
+                          className="w-full text-left px-4 py-2 text-sm text-white hover:bg-zinc-800 capitalize"
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-white font-medium">{meeting.host?.fullName || 'Unknown'}</p>
-                  <p className="text-xs text-zinc-500">{meeting.host?.email || ''}</p>
-                </div>
-              </div>
+              ) : (
+                <span className={`text-sm px-3 py-1 rounded-full capitalize ${getStatusColor(meeting.status)}`}>
+                  {meeting.status}
+                </span>
+              )}
             </CardBody>
           </Card>
 
-          {/* Participants */}
+          {/* Meeting Code Card */}
           <Card glass>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Participants</h3>
-                {isHost && (
-                  <Button variant="ghost" size="sm">
-                    <UserPlus size={14} className="mr-1" />
-                    Add
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
             <CardBody>
-              {meeting.participants && meeting.participants.length > 0 ? (
-                <div className="space-y-3">
-                  {meeting.participants.map((participant) => (
-                    <div
-                      key={participant._id}
-                      className="flex items-center space-x-3 p-3 bg-zinc-950/60 border border-zinc-800/40 rounded-xl"
-                    >
-                      <div className="w-10 h-10 bg-violet-600/10 border-2 border-violet-500/20 rounded-full flex items-center justify-center">
-                        <Users size={20} className="text-violet-400" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-white text-sm font-medium">{participant.fullName}</p>
-                        <p className="text-xs text-zinc-500">{participant.email}</p>
-                      </div>
-                    </div>
-                  ))}
+              <h3 className="text-lg font-semibold text-white mb-2">Meeting Code</h3>
+              <p className="text-2xl font-mono font-bold text-violet-400">
+                {meeting.meetingCode}
+              </p>
+            </CardBody>
+          </Card>
+
+          {/* Participants Card */}
+          <Card glass>
+            <CardBody>
+              <h3 className="text-lg font-semibold text-white mb-4">Participants</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-sm font-semibold">
+                    {meeting.host?.fullName?.charAt(0) || 'H'}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm">{meeting.host?.fullName || 'Unknown'}</p>
+                    <p className="text-zinc-500 text-xs">Host</p>
+                  </div>
                 </div>
-              ) : (
-                <EmptyState
-                  type="users"
-                  title="No participants yet"
-                  description="Participants will appear here once they join the meeting."
-                />
-              )}
+                {meeting.participants?.map((participant) => (
+                  <div key={participant._id} className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-white text-sm font-semibold">
+                      {participant.fullName?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <p className="text-white text-sm">{participant.fullName}</p>
+                      <p className="text-zinc-500 text-xs">Participant</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardBody>
           </Card>
         </div>

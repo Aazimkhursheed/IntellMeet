@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Users } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Copy, Users, Monitor } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useMeetingStore } from '../../store/useMeetingStore.js';
 
@@ -10,8 +10,10 @@ const MeetingControls = ({ onLeaveMeeting }) => {
   const {
     isVideoEnabled,
     isAudioEnabled,
+    isScreenSharing,
     toggleVideo,
     toggleAudio,
+    toggleScreenShare,
     meetingCode,
     participantCount,
   } = useMeetingStore();
@@ -29,7 +31,7 @@ const MeetingControls = ({ onLeaveMeeting }) => {
     toast.success('Meeting link copied to clipboard');
   };
 
-  const ControlButton = ({ onClick, icon: Icon, activeIcon, isActive, title, variant = 'default' }) => {
+  const ControlButton = ({ onClick, icon: Icon, isActive, title, variant = 'default' }) => {
     const baseClasses = 'p-4 rounded-full transition-all duration-200 flex items-center justify-center';
     const variantClasses = {
       default: isActive 
@@ -45,7 +47,7 @@ const MeetingControls = ({ onLeaveMeeting }) => {
         className={`${baseClasses} ${variantClasses[variant]}`}
         title={title}
       >
-        {isActive ? <Icon size={20} /> : <activeIcon size={20} />}
+        <Icon size={20} />
       </button>
     );
   };
@@ -63,16 +65,14 @@ const MeetingControls = ({ onLeaveMeeting }) => {
         <div className="flex items-center space-x-3">
           <ControlButton
             onClick={toggleAudio}
-            icon={Mic}
-            activeIcon={MicOff}
+            icon={isAudioEnabled ? Mic : MicOff}
             isActive={isAudioEnabled}
             title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
           />
 
           <ControlButton
             onClick={toggleVideo}
-            icon={Video}
-            activeIcon={VideoOff}
+            icon={isVideoEnabled ? Video : VideoOff}
             isActive={isVideoEnabled}
             title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
           />
@@ -80,7 +80,6 @@ const MeetingControls = ({ onLeaveMeeting }) => {
           <ControlButton
             onClick={handleCopyMeetingCode}
             icon={Copy}
-            activeIcon={Copy}
             isActive={true}
             title="Copy meeting code"
           />
@@ -88,15 +87,20 @@ const MeetingControls = ({ onLeaveMeeting }) => {
           <ControlButton
             onClick={handleCopyMeetingLink}
             icon={Copy}
-            activeIcon={Copy}
             isActive={true}
             title="Copy meeting link"
           />
 
           <ControlButton
+            onClick={toggleScreenShare}
+            icon={Monitor}
+            isActive={!isScreenSharing}
+            title={isScreenSharing ? 'Stop screen sharing' : 'Share screen'}
+          />
+
+          <ControlButton
             onClick={onLeaveMeeting}
             icon={PhoneOff}
-            activeIcon={PhoneOff}
             isActive={true}
             title="Leave meeting"
             variant="danger"

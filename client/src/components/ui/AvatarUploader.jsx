@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
-import { Camera, Upload } from 'lucide-react';
+import { Camera } from 'lucide-react';
 import { useProfile } from '../../hooks/useProfile.js';
 
-const AvatarUploader = ({ currentAvatar, onUploadSuccess }) => {
+const AvatarUploader = ({ onUploadSuccess }) => {
   const { uploadAvatar, isUploading } = useProfile();
   const fileInputRef = useRef(null);
 

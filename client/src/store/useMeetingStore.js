@@ -70,25 +70,25 @@ export const useMeetingStore = create((set, get) => ({
   },
 
   toggleScreenShare: async () => {
-    const { isScreenSharing, localStream } = get();
+    const { isScreenSharing, screenStream } = get();
     
     if (!isScreenSharing) {
       try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        const newScreenStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
         });
         
         set({ 
           isScreenSharing: true, 
-          screenStream 
+          screenStream: newScreenStream 
         });
 
         // Handle user clicking "Stop sharing" in browser UI
-        screenStream.getVideoTracks()[0].onended = () => {
+        newScreenStream.getVideoTracks()[0].onended = () => {
           get().toggleScreenShare();
         };
 
-        return screenStream;
+        return newScreenStream;
       } catch (error) {
         console.error('Error starting screen share:', error);
         set({ error: 'Failed to start screen sharing' });
@@ -96,7 +96,6 @@ export const useMeetingStore = create((set, get) => ({
       }
     } else {
       // Stop screen sharing
-      const { screenStream } = get();
       if (screenStream) {
         screenStream.getTracks().forEach(track => track.stop());
       }

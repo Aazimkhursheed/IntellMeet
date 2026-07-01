@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Filter, Calendar, Clock, Users, Video, X, ChevronRight, MoreVertical, Trash2, Edit2 } from 'lucide-react';
+import { Search, Plus, Filter, Calendar, Clock, Users, Video, ChevronRight, MoreVertical, Trash2, Edit2 } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import { Card, CardBody } from '../components/ui/Card.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { useMeetings } from '../hooks/useMeetings.js';
-import { useAuthStore } from '../store/useAuthStore.js';
+import useAuthStore from '../store/useAuthStore.js';
 import toast from 'react-hot-toast';
 
 const Meetings = () => {
@@ -21,11 +21,8 @@ const Meetings = () => {
   const {
     meetings,
     isLoading,
-    error,
-    createMeeting,
-    updateMeeting,
+    error: meetingsError,
     deleteMeeting,
-    isCreating,
   } = useMeetings();
 
   // Filter meetings based on search and status
@@ -74,7 +71,7 @@ const Meetings = () => {
       try {
         await deleteMeeting(meetingId);
         toast.success('Meeting deleted successfully');
-      } catch (error) {
+      } catch {
         toast.error('Failed to delete meeting');
       }
     }
@@ -106,7 +103,7 @@ const Meetings = () => {
   }
 
   // Error state
-  if (error) {
+  if (meetingsError) {
     return (
       <div className="space-y-6">
         <PageHeader
@@ -124,7 +121,7 @@ const Meetings = () => {
             <EmptyState
               type="default"
               title="Failed to load meetings"
-              description={error.response?.data?.message || error.message || 'Unable to fetch meetings. Please try again later.'}
+              description={meetingsError.response?.data?.message || meetingsError.message || 'Unable to fetch meetings. Please try again later.'}
               action={
                 <Button variant="primary" onClick={() => window.location.reload()}>
                   Retry

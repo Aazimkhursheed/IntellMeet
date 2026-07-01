@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Video, Mic, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Video, Mic, AlertCircle, Loader2, ArrowRight, VideoOff, MicOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDevices } from '../hooks/useDevices.js';
 import { useMeetingStore } from '../store/useMeetingStore.js';
@@ -40,6 +40,7 @@ const MeetingLobby = () => {
   const [error, setError] = useState(null);
   const [meetingInfo, setMeetingInfoState] = useState(null);
   const [isValidating, setIsValidating] = useState(true);
+  const previewStreamRef = useRef(null);
 
   // Validate meeting code and fetch meeting details
   useEffect(() => {
@@ -91,6 +92,7 @@ const MeetingLobby = () => {
         
         if (stream) {
           setPreviewStream(stream);
+          previewStreamRef.current = stream;
         } else {
           setError(deviceError || 'Failed to access camera and microphone');
         }
@@ -106,8 +108,8 @@ const MeetingLobby = () => {
 
     // Cleanup on unmount
     return () => {
-      if (previewStream) {
-        stopStream(previewStream);
+      if (previewStreamRef.current) {
+        stopStream(previewStreamRef.current);
       }
     };
   }, [getMediaStream, stopStream, deviceError]);
@@ -115,13 +117,14 @@ const MeetingLobby = () => {
   // Update preview when devices change
   useEffect(() => {
     const updatePreview = async () => {
-      if (previewStream) {
-        stopStream(previewStream);
+      if (previewStreamRef.current) {
+        stopStream(previewStreamRef.current);
       }
 
       const stream = await getMediaStream(true, true);
       if (stream) {
         setPreviewStream(stream);
+        previewStreamRef.current = stream;
       }
     };
 

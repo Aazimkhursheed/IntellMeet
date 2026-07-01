@@ -99,6 +99,20 @@ export const initializeMeetingSocket = (io) => {
       });
     });
 
+    // Chat message
+    socket.on('chat-message', (data) => {
+      const { meetingId, userId, userName, message, timestamp } = data;
+      
+      // Broadcast message to all participants in the room (including sender)
+      io.to(meetingId).emit('chat-message', {
+        userId,
+        userName,
+        message,
+        timestamp: timestamp || new Date(),
+        socketId: socket.id,
+      });
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
       // Find and clean up all meetings this socket was in

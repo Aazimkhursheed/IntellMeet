@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import meetingRoutes from './routes/meetingRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use(cookieParser());
 // Mount API routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/meetings', meetingRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {
