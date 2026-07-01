@@ -1,0 +1,43 @@
+{
+  "name": "intellmeet-client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint src/**/*.jsx src/**/*.js",
+    "preview": "vite preview",
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\""
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.25.0",
+    "axios": "^1.6.8",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.359.0",
+    "react": "^19.0.0-rc.0 || ^19.0.0",
+    "react-dom": "^19.0.0-rc.0 || ^19.0.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.22.3",
+    "socket.io-client": "^4.7.4",
+    "tailwind-merge": "^2.2.2",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@tailwindcss/vite": "^4.0.0-alpha.12 || ^4.0.0",
+    "@types/react": "^19.0.0-rc.0 || ^19.0.0",
+    "@types/react-dom": "^19.0.0-rc.0 || ^19.0.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^5.1.0-rc-fb7e8aa0-20240501 || ^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "globals": "^15.0.0",
+    "postcss": "^8.4.35",
+    "prettier": "^3.2.5",
+    "tailwindcss": "^4.0.0-alpha.12 || ^4.0.0",
+    "vite": "^5.1.6"
+  }
+}
