@@ -71,22 +71,28 @@ export const useMeetingStore = create((set, get) => ({
 
   toggleScreenShare: async () => {
     const { isScreenSharing, screenStream } = get();
-    
+
     if (!isScreenSharing) {
       try {
         const newScreenStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
         });
-        
-        set({ 
-          isScreenSharing: true, 
-          screenStream: newScreenStream 
-        });
 
         // Handle user clicking "Stop sharing" in browser UI
         newScreenStream.getVideoTracks()[0].onended = () => {
-          get().toggleScreenShare();
+          if (newScreenStream) {
+            newScreenStream.getTracks().forEach(track => track.stop());
+          }
+          set({
+            isScreenSharing: false,
+            screenStream: null
+          });
         };
+
+        set({
+          isScreenSharing: true,
+          screenStream: newScreenStream
+        });
 
         return newScreenStream;
       } catch (error) {
@@ -99,9 +105,9 @@ export const useMeetingStore = create((set, get) => ({
       if (screenStream) {
         screenStream.getTracks().forEach(track => track.stop());
       }
-      set({ 
-        isScreenSharing: false, 
-        screenStream: null 
+      set({
+        isScreenSharing: false,
+        screenStream: null
       });
       return null;
     }
@@ -133,7 +139,7 @@ export const useMeetingStore = create((set, get) => ({
   updateParticipantStream: (userId, stream) => {
     const { participants } = get();
     set({
-      participants: participants.map(p => 
+      participants: participants.map(p =>
         p.userId === userId ? { ...p, stream } : p
       ),
     });
@@ -162,7 +168,7 @@ export const useMeetingStore = create((set, get) => ({
 
   resetMeeting: () => {
     const { localStream, screenStream } = get();
-    
+
     // Stop all media tracks
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
