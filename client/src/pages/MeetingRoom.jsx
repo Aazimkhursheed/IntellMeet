@@ -50,6 +50,7 @@ const MeetingRoom = () => {
     closeAllConnections,
     replaceVideoTrack,
     restoreCameraTrack,
+    getRemoteStream,
   } = useWebRTC(meetingId, localStream, screenStream);
 
   // Update duration timer
@@ -248,6 +249,7 @@ const MeetingRoom = () => {
           localStream={localStream}
           currentUserId={useMeetingStore.getState().user?.id}
           isScreenSharing={isScreenSharing}
+          getRemoteStream={getRemoteStream}
         />
       </div>
 

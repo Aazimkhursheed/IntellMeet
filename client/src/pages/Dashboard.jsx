@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Users, Video, Plus } from 'lucide-react';
 import PageHeader from '../components/ui/PageHeader.jsx';
 import { Card, CardBody } from '../components/ui/Card.jsx';
@@ -8,7 +9,8 @@ import EmptyState from '../components/ui/EmptyState.jsx';
 import { useMeetings } from '../hooks/useMeetings.js';
 
 const Dashboard = () => {
-  const { meetings, isLoading, error } = useMeetings();
+  const navigate = useNavigate();
+  const { meetings, isLoading, error, createMeeting } = useMeetings();
 
   // Calculate statistics from meetings data
   const totalMeetings = meetings?.length || 0;
@@ -98,6 +100,47 @@ const Dashboard = () => {
     });
   };
 
+  // Handle new meeting creation
+  const handleNewMeeting = async () => {
+    try {
+      // Generate meeting code in format XXX-XXX-XXX
+      const generateMeetingCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 9; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return `${code.slice(0, 3)}-${code.slice(3, 6)}-${code.slice(6, 9)}`;
+      };
+      
+      const meetingData = {
+        title: 'New Meeting',
+        description: '',
+        scheduledFor: new Date().toISOString(),
+        duration: 60,
+        meetingCode: generateMeetingCode(),
+      };
+      
+      const meeting = await createMeeting(meetingData);
+      
+      if (meeting?.meetingCode) {
+        navigate(`/meeting/${meeting.meetingCode}`);
+      }
+    } catch (error) {
+      console.error('Failed to create meeting:', error);
+    }
+  };
+
+  // Handle schedule meeting navigation
+  const handleScheduleMeeting = () => {
+    navigate('/meetings');
+  };
+
+  // Handle meeting card click
+  const handleMeetingClick = (meetingId) => {
+    navigate(`/meetings/${meetingId}`);
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -158,7 +201,7 @@ const Dashboard = () => {
         title="Welcome back!"
         subtitle="Here's what's happening with your meetings today."
         action={
-          <Button variant="primary">
+          <Button variant="primary" onClick={handleNewMeeting}>
             <Plus size={16} className="mr-2" />
             New Meeting
           </Button>
@@ -208,6 +251,7 @@ const Dashboard = () => {
                 {upcomingMeetings.map((meeting) => (
                   <div
                     key={meeting._id}
+                    onClick={() => handleMeetingClick(meeting._id)}
                     className="p-4 bg-zinc-950/60 border border-zinc-800/40 rounded-xl hover:border-zinc-700/50 transition cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -254,6 +298,7 @@ const Dashboard = () => {
                 {recentMeetings.map((meeting) => (
                   <div
                     key={meeting._id}
+                    onClick={() => handleMeetingClick(meeting._id)}
                     className="p-4 bg-zinc-950/60 border border-zinc-800/40 rounded-xl hover:border-zinc-700/50 transition cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -279,15 +324,15 @@ const Dashboard = () => {
         <CardBody>
           <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Button variant="secondary" className="justify-start">
+            <Button variant="secondary" className="justify-start" onClick={handleNewMeeting}>
               <Plus size={18} className="mr-2" />
               Create Meeting
             </Button>
-            <Button variant="secondary" className="justify-start">
+            <Button variant="secondary" className="justify-start" onClick={handleScheduleMeeting}>
               <Calendar size={18} className="mr-2" />
               Schedule Meeting
             </Button>
-            <Button variant="secondary" className="justify-start">
+            <Button variant="secondary" className="justify-start" onClick={handleScheduleMeeting}>
               <Users size={18} className="mr-2" />
               Invite Participants
             </Button>

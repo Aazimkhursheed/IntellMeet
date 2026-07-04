@@ -15,7 +15,7 @@ export const useAI = (meetingId) => {
     queryKey: ['meeting-summary', meetingId],
     queryKeyHash: 'meeting-summary',
     queryFn: async () => {
-      const response = await api.get(`/api/v1/ai/summary/${meetingId}`);
+      const response = await api.get(`/v1/ai/summary/${meetingId}`);
       return response.data.data;
     },
     enabled: !!meetingId,
@@ -27,7 +27,7 @@ export const useAI = (meetingId) => {
     queryKey: ['action-items', meetingId],
     queryKeyHash: 'action-items',
     queryFn: async () => {
-      const response = await api.get(`/api/v1/ai/action-items/${meetingId}`);
+      const response = await api.get(`/v1/ai/action-items/${meetingId}`);
       return response.data.data;
     },
     enabled: !!meetingId,
@@ -38,7 +38,7 @@ export const useAI = (meetingId) => {
   const generateInsightsMutation = useMutation({
     mutationFn: async () => {
       setIsGenerating(true);
-      const response = await api.post(`/api/v1/ai/generate/${meetingId}`);
+      const response = await api.post(`/v1/ai/generate/${meetingId}`);
       return response.data;
     },
     onSuccess: () => {
@@ -59,7 +59,7 @@ export const useAI = (meetingId) => {
   // Update action item
   const updateActionItemMutation = useMutation({
     mutationFn: async ({ actionItemId, updates }) => {
-      const response = await api.patch(`/api/v1/ai/action-items/${actionItemId}`, updates);
+      const response = await api.patch(`/v1/ai/action-items/${actionItemId}`, updates);
       return response.data.data;
     },
     onSuccess: () => {
@@ -74,7 +74,7 @@ export const useAI = (meetingId) => {
   // Delete action item
   const deleteActionItemMutation = useMutation({
     mutationFn: async (actionItemId) => {
-      const response = await api.delete(`/api/v1/ai/action-items/${actionItemId}`);
+      const response = await api.delete(`/v1/ai/action-items/${actionItemId}`);
       return response.data;
     },
     onSuccess: () => {

@@ -4,7 +4,7 @@ import { User, Monitor } from 'lucide-react';
 /**
  * VideoGrid component - Responsive grid layout for participant videos
  */
-const VideoGrid = ({ participants, localStream, currentUserId, isScreenSharing }) => {
+const VideoGrid = ({ participants, localStream, currentUserId, isScreenSharing, getRemoteStream, }) => {
   const allParticipants = [
     {
       userId: currentUserId,
@@ -15,6 +15,7 @@ const VideoGrid = ({ participants, localStream, currentUserId, isScreenSharing }
     },
     ...participants.map(p => ({
       ...p,
+      stream: getRemoteStream ? getRemoteStream(p.socketId) : null,
       isLocal: false,
       isScreenSharing: false,
     })),

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Video, Mic, AlertCircle, Loader2, ArrowRight, VideoOff, MicOff } from 'lucide-react';
+import { Video, Mic, AlertCircle, Loader2, ArrowRight, VideoOff, MicOff, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useDevices } from '../hooks/useDevices.js';
 import { useMeetingStore } from '../store/useMeetingStore.js';
@@ -54,7 +54,7 @@ const MeetingLobby = () => {
         // const response = await apiClient.get(`/meetings/validate/${meetingCode}`);
         
         // Simulated validation - accept any code format XXX-XXX-XXX
-        const codePattern = /^\d{3}-\d{3}-\d{3}$/;
+        const codePattern = /^[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$/;
         if (!codePattern.test(meetingCode)) {
           throw new Error('Invalid meeting code format');
         }
@@ -138,6 +138,9 @@ const MeetingLobby = () => {
       setIsLoading(true);
       setError(null);
 
+      // Navigate to meeting room first
+      navigate(`/meeting-room/${meetingCode}`);
+
       // Connect to socket if not already connected
       if (!socketService.socket?.connected) {
         socketService.connect();
@@ -154,10 +157,8 @@ const MeetingLobby = () => {
       // Join the meeting room via socket
       socketService.joinMeeting(meetingCode);
 
-      // Navigate to meeting room
-      navigate(`/meeting/${meetingCode}`);
-      
       toast.success('Joined meeting successfully');
+      setIsLoading(false);
     } catch (err) {
       console.error('Error joining meeting:', err);
       setError('Failed to join meeting');
@@ -172,6 +173,16 @@ const MeetingLobby = () => {
     }
     resetMeeting();
     navigate(-1);
+  };
+
+  const handleCopyMeetingCode = async () => {
+    try {
+      await navigator.clipboard.writeText(meetingCode);
+      toast.success('Meeting code copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy meeting code:', err);
+      toast.error('Failed to copy meeting code');
+    }
   };
 
   // Loading state
@@ -309,9 +320,18 @@ const MeetingLobby = () => {
 
               <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-4">
                 <p className="text-xs text-zinc-500 mb-1">Meeting Code</p>
-                <p className="text-lg font-mono font-bold text-violet-400">
-                  {meetingCode}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-mono font-bold text-violet-400">
+                    {meetingCode}
+                  </p>
+                  <button
+                    onClick={handleCopyMeetingCode}
+                    className="p-2 hover:bg-zinc-800 rounded-lg transition text-zinc-400 hover:text-white"
+                    title="Copy meeting code"
+                  >
+                    <Copy size={18} />
+                  </button>
+                </div>
               </div>
             </div>
 

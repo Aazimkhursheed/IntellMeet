@@ -14,8 +14,8 @@ export const generateMeetingInsights = asyncHandler(async (req, res, next) => {
   const userId = req.user.id;
 
   try {
-    // Fetch meeting details
-    const meeting = await Meeting.findById(meetingId)
+    // Find meeting by meetingCode
+    const meeting = await Meeting.findOne({ meetingCode: meetingId })
       .populate('host', 'fullName')
       .populate('participants', 'fullName');
 
@@ -40,7 +40,7 @@ export const generateMeetingInsights = asyncHandler(async (req, res, next) => {
     }
 
     // Check if summary already exists
-    const existingSummary = await MeetingSummary.findOne({ meetingId });
+    const existingSummary = await MeetingSummary.findOne({ meetingId: meeting._id });
     if (existingSummary) {
       return res.status(400).json({
         success: false,
@@ -128,7 +128,16 @@ export const generateMeetingInsights = asyncHandler(async (req, res, next) => {
 export const getMeetingSummary = asyncHandler(async (req, res, _next) => {
   const meetingId = req.params.meetingId;
 
-  const summary = await MeetingSummary.findOne({ meetingId })
+  // Find meeting by meetingCode
+  const meeting = await Meeting.findOne({ meetingCode: meetingId });
+  if (!meeting) {
+    return res.status(404).json({
+      success: false,
+      message: 'Meeting not found',
+    });
+  }
+
+  const summary = await MeetingSummary.findOne({ meetingId: meeting._id })
     .populate('participants.userId', 'fullName');
 
   if (!summary) {
@@ -153,7 +162,16 @@ export const getMeetingSummary = asyncHandler(async (req, res, _next) => {
 export const getMeetingActionItems = asyncHandler(async (req, res, _next) => {
   const meetingId = req.params.meetingId;
 
-  const actionItems = await ActionItem.find({ meetingId })
+  // Find meeting by meetingCode
+  const meeting = await Meeting.findOne({ meetingCode: meetingId });
+  if (!meeting) {
+    return res.status(404).json({
+      success: false,
+      message: 'Meeting not found',
+    });
+  }
+
+  const actionItems = await ActionItem.find({ meetingId: meeting._id })
     .populate('assignee.userId', 'fullName')
     .populate('createdBy', 'fullName')
     .sort({ createdAt: -1 });
@@ -186,7 +204,7 @@ export const updateActionItem = asyncHandler(async (req, res, _next) => {
   // Update fields
   const allowedUpdates = ['status', 'priority', 'task', 'notes', 'dueDate', 'assignee'];
   const updates = {};
-  
+
   allowedUpdates.forEach(field => {
     if (req.body[field] !== undefined) {
       updates[field] = req.body[field];

@@ -27,7 +27,6 @@ const meetingSchema = new mongoose.Schema(
     ],
     meetingCode: {
       type: String,
-      required: [true, 'Meeting code is required'],
       unique: true,
       trim: true,
     },

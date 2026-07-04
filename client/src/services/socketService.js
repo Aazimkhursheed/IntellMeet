@@ -17,7 +17,7 @@ class SocketService {
 
     const user = useAuthStore.getState().user;
     
-    this.socket = io(import.meta.env.VITE_SOCKET_URL || '/socket.io', {
+    this.socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, {
       auth: {
         userId: user?.id,
         userName: user?.fullName,
